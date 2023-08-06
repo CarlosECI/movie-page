@@ -9,8 +9,19 @@ const api = axios.create({
 })
 
 // Helpers
-function createMovies(movies, container) {
-    container.innerHTML = '';
+const lazyLoader = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const url = entry.target.getAttribute('data-img')
+            entry.target.setAttribute('src', url)
+        }
+    })
+})
+
+function createMovies(movies, container, {lazyLoad = false, clean = true} = {}) {
+    if (clean) {
+        container.innerHTML = '';
+    }
 
     movies.forEach(movie => {
         const movieContainer = document.createElement('div')
@@ -18,11 +29,18 @@ function createMovies(movies, container) {
             location.hash = 'movie=' + movie.id;
         })
         movieContainer.classList.add('movie-container')
+
         const movieImg = document.createElement('img')
         movieImg.classList.add('movie-img')
         movieImg.setAttribute('alt', movie.title)
-        movieImg.src = 'https://image.tmdb.org/t/p/w300' + movie.poster_path;
-
+        movieImg.setAttribute(lazyLoad ? 'data-img' : 'src', 'https://image.tmdb.org/t/p/w300' + movie.poster_path)
+        if (lazyLoad) {
+            lazyLoader.observe(movieImg)
+        }
+        movieImg.addEventListener('error', () => {
+            movieImg.setAttribute('src', 'https://img.freepik.com/vector-gratis/ups-error-404-ilustracion-concepto-robot-roto_114360-5529.jpg?w=2000')
+        })
+        
         movieContainer.appendChild(movieImg)
         container.appendChild(movieContainer)
     });
@@ -54,7 +72,7 @@ async function getTrendingMoviesPreview() {
 
     const movies = data.results;
 
-    createMovies(movies, trendingMoviesPreviewList);
+    createMovies(movies, trendingMoviesPreviewList, true);
 }
 
 async function getCategoriesPreview() {
@@ -89,12 +107,27 @@ async function getMoviesBySearch(query) {
     createMovies(movies, genericSection)
 }
 
-async function getTrendingMovies() {
-    const { data } = await api('trending/movie/day')
+async function getTrendingMovies(page = 1) {
+    const { data } = await api('trending/movie/day', {
+        params: {
+            page
+        }
+    })
 
     const movies = data.results;
 
-    createMovies(movies, genericSection);
+    createMovies(movies, genericSection, {
+        lazyLoad: true, 
+        clean: page == 1
+    });
+
+    const btnLoadMore = document.createElement('button')
+    btnLoadMore.innerText = 'Cargar mas'
+    btnLoadMore.addEventListener('click', () => {
+        btnLoadMore.style.display = 'none'
+        getTrendingMovies(page + 1)
+    })
+    genericSection.appendChild(btnLoadMore);
 }
 
 async function getMovieById(id) {

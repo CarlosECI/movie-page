@@ -18,16 +18,13 @@ const lazyLoader = new IntersectionObserver((entries) => {
     })
 })
 
-function createMovies(movies, container, {lazyLoad = false, clean = true} = {}) {
+function createMovies(movies, container, { lazyLoad = false, clean = true } = {}) {
     if (clean) {
         container.innerHTML = '';
     }
 
     movies.forEach(movie => {
         const movieContainer = document.createElement('div')
-        movieContainer.addEventListener('click', () => {
-            location.hash = 'movie=' + movie.id;
-        })
         movieContainer.classList.add('movie-container')
 
         const movieImg = document.createElement('img')
@@ -37,11 +34,22 @@ function createMovies(movies, container, {lazyLoad = false, clean = true} = {}) 
         if (lazyLoad) {
             lazyLoader.observe(movieImg)
         }
+        movieImg.addEventListener('click', () => {
+            location.hash = 'movie=' + movie.id;
+        })
         movieImg.addEventListener('error', () => {
             movieImg.setAttribute('src', 'https://img.freepik.com/vector-gratis/ups-error-404-ilustracion-concepto-robot-roto_114360-5529.jpg?w=2000')
         })
-        
+
+        const movieBtn = document.createElement('button');
+        movieBtn.classList.add('movie-btn');
+        movieBtn.addEventListener('click', () => {
+            movieBtn.classList.toggle('movie-btn--liked');
+            // DEBERIAMOS AGREGAR LA PELICULA A LS
+        });
+
         movieContainer.appendChild(movieImg)
+        movieContainer.appendChild(movieBtn)
         container.appendChild(movieContainer)
     });
 }
@@ -72,7 +80,7 @@ async function getTrendingMoviesPreview() {
 
     const movies = data.results;
 
-    createMovies(movies, trendingMoviesPreviewList, true);
+    createMovies(movies, trendingMoviesPreviewList, { lazyLoad: true });
 }
 
 async function getCategoriesPreview() {
@@ -91,8 +99,37 @@ async function getMoviesByCategory(id) {
     })
 
     const movies = data.results;
+    maxPage = data.total_pages
 
-    createMovies(movies, genericSection)
+    createMovies(movies, genericSection, {
+        lazyLoad: true
+    })
+}
+
+function getPaginatedMoviesByCategory(id) {
+    return async function () {
+        const { scrollHeight, scrollTop, clientHeight } = document.documentElement;
+        const scrollIsBottom = (scrollTop + clientHeight) >= (scrollHeight - 15);
+
+        const pageIsNotMax = page < maxPage;
+
+        if (scrollIsBottom && pageIsNotMax) {
+            page++
+            const { data } = await api('discover/movie', {
+                params: {
+                    with_genres: id,
+                    page,
+                }
+            })
+
+            const movies = data.results;
+
+            createMovies(movies, genericSection, {
+                lazyLoad: true,
+                clean: false,
+            });
+        }
+    }
 }
 
 async function getMoviesBySearch(query) {
@@ -104,30 +141,77 @@ async function getMoviesBySearch(query) {
 
     const movies = data.results;
 
-    createMovies(movies, genericSection)
+    maxPage = data.total_pages;
+
+    createMovies(movies, genericSection, { lazyLoad: true, clear: false })
 }
 
-async function getTrendingMovies(page = 1) {
-    const { data } = await api('trending/movie/day', {
-        params: {
-            page
-        }
-    })
+function getPaginatedMoviesBySearch(query) {
+    return async function () {
+        const { scrollHeight, scrollTop, clientHeight } = document.documentElement;
+        const scrollIsBottom = (scrollTop + clientHeight) >= (scrollHeight - 15);
 
+        const pageIsNotMax = page < maxPage;
+
+        if (scrollIsBottom && pageIsNotMax) {
+            page++
+            const { data } = await api('search/movie', {
+                params: {
+                    query,
+                    page,
+                }
+            })
+
+            const movies = data.results;
+
+            createMovies(movies, genericSection, {
+                lazyLoad: true,
+                clean: false,
+            });
+        }
+    }
+}
+
+async function getTrendingMovies() {
+    const { data } = await api('trending/movie/day')
     const movies = data.results;
+    maxPage = data.total_pages;
 
     createMovies(movies, genericSection, {
-        lazyLoad: true, 
-        clean: page == 1
+        lazyLoad: true,
     });
 
-    const btnLoadMore = document.createElement('button')
-    btnLoadMore.innerText = 'Cargar mas'
-    btnLoadMore.addEventListener('click', () => {
-        btnLoadMore.style.display = 'none'
-        getTrendingMovies(page + 1)
-    })
-    genericSection.appendChild(btnLoadMore);
+    // const btnLoadMore = document.createElement('button')
+    // btnLoadMore.innerText = 'Cargar mas'
+    // btnLoadMore.addEventListener('click', () => {
+    //     btnLoadMore.style.display = 'none'
+    //     getTrendingMovies(page + 1)
+    // })
+    // genericSection.appendChild(btnLoadMore);
+}
+
+async function getPaginatedTrendingMovies() {
+    const { scrollHeight, scrollTop, clientHeight } = document.documentElement;
+    const scrollIsBottom = (scrollTop + clientHeight) >= (scrollHeight - 15);
+
+    const pageIsNotMax = page < maxPage;
+
+    if (scrollIsBottom && pageIsNotMax) {
+        console.log(page)
+        page++
+        const { data } = await api('trending/movie/day', {
+            params: {
+                page
+            }
+        })
+
+        const movies = data.results;
+
+        createMovies(movies, genericSection, {
+            lazyLoad: true,
+            clean: false,
+        });
+    }
 }
 
 async function getMovieById(id) {

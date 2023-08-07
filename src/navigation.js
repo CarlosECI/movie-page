@@ -1,3 +1,7 @@
+let maxPage;
+let page = 1;
+let infiniteScroll;
+
 searchFormBtn.addEventListener('click', () => {
     location.hash = '#search=' + searchFormInput.value;
 });
@@ -12,8 +16,14 @@ arrowBtn.addEventListener('click', () => {
 
 window.addEventListener('DOMContentLoaded', navigator, false);
 window.addEventListener('hashchange', navigator, false);
+window.addEventListener('scroll', infiniteScroll, false);
 
 function navigator() {
+    if (infiniteScroll) {
+        window.removeEventListener('scroll', infiniteScroll, { pasive: false })
+        infiniteScroll = undefined;
+    }
+
     if (location.hash.startsWith('#search=')) {
         searchPage()
     } else if (location.hash.startsWith('#trends=')) {
@@ -29,6 +39,10 @@ function navigator() {
     // Para que al cambiar de seccion la pagina no quede abajo si al inicio, manipulamos el scroll
     document.body.scrollTop = 0
     document.documentElement.scrollTop = 0
+
+    if (infiniteScroll) {
+        window.addEventListener('scroll', infiniteScroll, { pasive: false })
+    }
 }
 
 function homePage() {
@@ -67,6 +81,7 @@ function searchPage() {
 
     const query = decodeURI(location.hash.split("=")[1]);
     getMoviesBySearch(query)
+    infiniteScroll = getPaginatedMoviesBySearch(query)
 }
 
 function movieDetailsPage() {
@@ -104,6 +119,8 @@ function trendsPage() {
     headerCategoryTitle.innerHTML = 'Tendencias'
 
     getTrendingMovies();
+
+    infiniteScroll = getPaginatedTrendingMovies;
 }
 
 function categoryPage() {
@@ -127,4 +144,6 @@ function categoryPage() {
     headerCategoryTitle.innerHTML = categoryName;
 
     getMoviesByCategory(categoryId)
+    
+    infiniteScroll = getPaginatedMoviesByCategory(categoryId)
 }

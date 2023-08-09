@@ -5,8 +5,34 @@ const api = axios.create({
     },
     params: {
         'api_key': API_KEY,
+        'language': 'es-ES',
     }
 })
+
+function likedMovieList() {
+    const item = JSON.parse(localStorage.getItem('liked_movies'))
+    let movies;
+
+    if (item) {
+        movies = item;
+    } else {
+        movies = {};
+    }
+
+    return movies
+}
+
+function likeMovie(movie) {
+    const likedMovies = likedMovieList();
+
+    if (likedMovies[movie.id]) {
+        likedMovies[movie.id] = undefined;
+    } else {
+        likedMovies[movie.id] = movie;
+    }
+
+    localStorage.setItem('liked_movies', JSON.stringify(likedMovies));
+}
 
 // Helpers
 const lazyLoader = new IntersectionObserver((entries) => {
@@ -43,8 +69,12 @@ function createMovies(movies, container, { lazyLoad = false, clean = true } = {}
 
         const movieBtn = document.createElement('button');
         movieBtn.classList.add('movie-btn');
+        likedMovieList()[movie.id] && movieBtn.classList.add('movie-btn--liked');
         movieBtn.addEventListener('click', () => {
             movieBtn.classList.toggle('movie-btn--liked');
+            likeMovie(movie);
+            getLikedMovies()
+            getTrendingMoviesPreview()
             // DEBERIAMOS AGREGAR LA PELICULA A LS
         });
 
@@ -237,4 +267,11 @@ async function getRelatedMovies(id) {
     const relatedMovies = data.results;
 
     createMovies(relatedMovies, relatedMoviesContainer)
+}
+
+function getLikedMovies() {
+    const likedMovies = likedMovieList();
+    const moviesArray = Object.values(likedMovies);
+
+    createMovies(moviesArray, likedMoviesContainer, { lazyLoad: true, clean: true })
 }

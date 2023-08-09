@@ -272,6 +272,10 @@ async function getRelatedMovies(id) {
 function getLikedMovies() {
     const likedMovies = likedMovieList();
     const moviesArray = Object.values(likedMovies);
-
-    createMovies(moviesArray, likedMoviesContainer, { lazyLoad: true, clean: true })
+    if (moviesArray.length === 0) {
+        likedMoviesSection.classList.add('inactive')
+    } else {
+        likedMoviesSection.classList.remove('inactive')
+        createMovies(moviesArray, likedMoviesContainer, { lazyLoad: true, clean: true })
+    }
 }

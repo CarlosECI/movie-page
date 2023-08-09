@@ -272,10 +272,21 @@ async function getRelatedMovies(id) {
 function getLikedMovies() {
     const likedMovies = likedMovieList();
     const moviesArray = Object.values(likedMovies);
-    if (moviesArray.length === 0) {
+
+    console.log(moviesArray)
+    if (moviesArray.length == 0) {
+        likedMoviesSection.classList.add('inactive')
+    } else if (location.hash.startsWith('#movie=')) {
+        likedMoviesSection.classList.add('inactive')
+    } else if (location.hash.startsWith('#trends=')) {
+        likedMoviesSection.classList.add('inactive')
+    } else if (location.hash.startsWith('#category=')) {
+        likedMoviesSection.classList.add('inactive')
+    } else if (location.hash.startsWith('#search=')) {
         likedMoviesSection.classList.add('inactive')
     } else {
         likedMoviesSection.classList.remove('inactive')
         createMovies(moviesArray, likedMoviesContainer, { lazyLoad: true, clean: true })
     }
+    
 }
